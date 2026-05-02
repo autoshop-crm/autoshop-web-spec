@@ -1,0 +1,33 @@
+🎓 Дипломный проект: CRM для автосервиса
+
+📱 Что делаю:
+• Backend API (Spring Boot 3.2 + PostgreSQL + Redis)
+• Web-панель для персонала (Vue.js 3)
+• Android приложение для клиентов (Kotlin)
+
+🛠 Стек:
+Backend: Java 17, Spring Boot, Spring Security (JWT + Sessions), JPA/Hibernate, PostgreSQL, Redis, MinIO (S3), RabbitMQ, Flyway
+Frontend: Vue.js 3, Vite, Pinia
+Mobile: Kotlin, MVVM, Retrofit, Room
+DevOps: Docker Compose, TestContainers, CI/CD
+
+⚙️ Ключевые фичи:
+• CRM: клиенты, заказы, история обслуживания
+• Интеграция UMAPI (каталог запчастей)
+• Программа лояльности с баллами
+• "Мой гараж" в мобилке — все авто клиента
+• Генерация смет и документов (PDF)
+• Умные напоминания (ТО, страховка)
+• Push/Email уведомления
+• Аналитика и отчеты
+
+🏗 Архитектура:
+• Clean Architecture
+• Гибридная безопасность (JWT для мобилки, Sessions для Web)
+• Async обработка через RabbitMQ
+• S3-хранилище для файлов (MinIO)
+• TestContainers для integration-тестов
+
+📊 Уровень: Middle+
+
+Соответствует требованиям к диплому?
