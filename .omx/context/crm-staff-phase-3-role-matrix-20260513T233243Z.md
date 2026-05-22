@@ -1,0 +1,22 @@
+# Context Snapshot — CRM Staff Phase 3 Role matrix and screen composition contract
+
+- Task statement: Выполнить `Phase 3 — Role matrix and screen composition contract` с учётом артефактов из Phase 0, typed foundation из Phase 1 и API/mapper boundary из Phase 2.
+- Desired outcome: Зафиксировать role matrix, section/action access contract и технический composition config, на который Phase 4/5 смогут опираться без ad hoc if-statements.
+- Known facts/evidence:
+  - Phase 0 unresolved decisions already documented in `ContextProject/Now/CRM_STAFF_ROLE_MATRIX_OPEN_QUESTIONS_RU.md`.
+  - Backend role constraints and endpoint semantics documented in `ContextProject/Now/CRM_FRONTEND_IMPLEMENTATION_REPORT_RU.md`.
+  - Product role intent documented in `ContextProject/Now/CRM_STAFF_ROLE_SCREEN_IMPLEMENTATION_PLAN_RU.md`.
+  - Phase 2 introduced `src/mappers/orderRoleMapper.ts` as a capability baseline.
+- Constraints:
+  - Do not silently finalize unresolved product decisions as if user-confirmed.
+  - Keep Phase 3 usable as technical contract, with explicit `confirmed` vs `assumed` boundaries where needed.
+  - Avoid major page rewrites in this phase.
+- Unknowns/open questions:
+  - Exact hidden vs disabled decisions for some actions.
+  - Exact field-level privacy for customer contact details by role.
+- Likely codebase touchpoints:
+  - `src/utils/roles.ts`
+  - `src/layouts/AppLayout.tsx`
+  - `src/pages/orders/OrderDetailsPage.tsx`
+  - `src/mappers/orderRoleMapper.ts`
+  - new policy/config files under `src/config` or `src/domain`

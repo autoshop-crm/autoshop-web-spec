@@ -1,0 +1,27 @@
+# Context Snapshot — CRM Staff Phase 0 Planning Freeze
+
+- Task statement: Выполнить `Phase 0 — Planning freeze and source-of-truth alignment` из `ContextProject/Now/CRM_STAFF_PHASED_IMPLEMENTATION_PLAN_RU.md`.
+- Desired outcome: Зафиксировать единый execution baseline для staff CRM до изменения frontend-кода, включая roadmap, source-of-truth order, unresolved role decisions и первоочередные model/API gaps.
+- Known facts/evidence:
+  - Основной phased roadmap уже подготовлен в `ContextProject/Now/CRM_STAFF_PHASED_IMPLEMENTATION_PLAN_RU.md`.
+  - Backend/UI contract зафиксирован в `ContextProject/Now/CRM_FRONTEND_IMPLEMENTATION_REPORT_RU.md`.
+  - Product/role intent зафиксирован в `ContextProject/Now/CRM_STAFF_ROLE_SCREEN_IMPLEMENTATION_PLAN_RU.md`.
+  - Deep-interview decisions и scope boundaries зафиксированы в `.omx/specs/deep-interview-crm-role-screen-planning.md` и `.omx/interviews/crm-role-screen-planning-20260513T230648Z.md`.
+  - First major surface already identified in the phased plan: `OrderDetailsPage`.
+- Constraints:
+  - Phase 0 не должен внедрять UI/TS implementation раньше согласования baseline.
+  - Точные role visibilities/editabilities требуют отдельного confirm step и не должны быть silently assumed as final.
+  - Для нового staff UI source of truth должен быть CRM contract и CRM endpoints, а не legacy endpoints.
+- Unknowns/open questions:
+  - Точная матрица видимости/редактируемости по `ADMIN`, `MANAGER`, `RECEPTIONIST`, `MECHANIC`.
+  - Какие поля customer contact должны быть скрыты или read-only для каждой staff-роли.
+  - Какие lifecycle/actions должны быть disabled-but-visible vs fully hidden.
+  - Нужны ли отдельные ограничения для financial, loyalty и approvals blocks beyond backend RBAC.
+- Likely codebase touchpoints:
+  - `src/pages/orders/OrderDetailsPage.tsx`
+  - `src/pages/orders/OrdersPage.tsx`
+  - `src/pages/orders/OrderCreatePage.tsx`
+  - `src/types/models.ts`
+  - `src/api/ordersApi.ts`
+  - `src/layouts/AppLayout.tsx`
+  - future CRM API modules under `src/api/*`

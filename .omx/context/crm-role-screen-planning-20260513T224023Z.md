@@ -1,0 +1,25 @@
+# Context Snapshot
+
+- Task statement: Изучить обновлённый frontend/backend flow CRM, провести deep-interview по распределению данных на экранах разных ролей и подготовить подробный реализационный план в формате Markdown.
+- Desired outcome: execution-ready план экранов, ролей, данных, границ MVP и рабочей последовательности внедрения для staff CRM; client perspective explicitly deferred.
+- Stated solution: deep-interview + план реализации с точки зрения рабочей сферы.
+- Probable intent hypothesis: избежать преждевременной реализации экранов без точной role/data матрицы и согласовать приоритеты staff-сценариев до проектирования UI.
+- Known facts/evidence:
+  - Есть обновлённый flow в `ContextProject/Now/CRM_FRONTEND_IMPLEMENTATION_REPORT_RU.md`.
+  - Backend уже различает роли `ADMIN`, `MANAGER`, `RECEPTIONIST`, `MECHANIC`, `CUSTOMER`.
+  - Staff surfaces приоритетнее client surfaces.
+  - Требуется отдельное решение о том, какие данные и действия видит каждая роль.
+- Constraints:
+  - В этом режиме не делать implementation.
+  - План должен быть в Markdown.
+  - Клиентская перспектива — future scope.
+- Unknowns/open questions:
+  - Какой уровень различий между ролями нужен на dashboard/list/detail/workspace.
+  - Что должно быть MVP vs later.
+  - Какие данные скрывать/показывать по ролям и по screen type.
+  - Насколько строго role-based segregation должна быть в navigation, widgets, actions, fields.
+- Decision-boundary unknowns:
+  - Что можно унифицировать между MANAGER / RECEPTIONIST / MECHANIC.
+  - Что OMX может решить сам в структуре плана без дополнительного согласования.
+- Likely codebase touchpoints:
+  - `ContextProject/Now/CRM_FRONTEND_IMPLEMENTATION_REPORT_RU.md`

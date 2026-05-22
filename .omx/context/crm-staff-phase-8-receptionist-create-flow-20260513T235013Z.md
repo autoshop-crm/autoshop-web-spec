@@ -1,0 +1,21 @@
+# Context Snapshot — CRM Staff Phase 8 Receptionist create flow
+
+- Task statement: Выполнить `Phase 8 — Receptionist create flow` поверх предыдущих фаз.
+- Desired outcome: Улучшить receptionist order creation flow: customer/vehicle linking, intake fields, standard services selection, immediate drop-off path, and explicit handoff to work.
+- Known facts/evidence:
+  - Phase 1/2 already added booking/intake payload fields and service catalog API.
+  - Current `OrderCreatePage` is still narrow and underuses CRM contract.
+  - Role matrix treats receptionist as primary owner of intake/create workflow.
+- Constraints:
+  - Preserve existing create flow behavior where possible.
+  - Do not build a full new dashboard or admin settings here.
+  - Keep implementation within current backend contract and existing frontend primitives.
+- Unknowns/open questions:
+  - Current app may not yet include a polished vehicle picker beyond customer-scoped selection.
+  - Employee assignment remains optional and secondary in this phase.
+- Likely codebase touchpoints:
+  - `src/pages/orders/OrderCreatePage.tsx`
+  - `src/components/CustomerLookupField.tsx`
+  - `src/api/ordersApi.ts`
+  - `src/api/serviceCatalogApi.ts`
+  - `src/api/vehiclesApi.ts`

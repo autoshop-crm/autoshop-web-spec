@@ -1,0 +1,32 @@
+{
+  "kind": "omx.question/v1",
+  "question_id": "question-2026-05-11T23-59-34-635Z-9ef912d6",
+  "session_id": "updated-parts-ui-plan",
+  "created_at": "2026-05-11T23:59:34.635Z",
+  "updated_at": "2026-05-11T23:59:34.673Z",
+  "status": "prompting",
+  "header": "Round 1",
+  "question": "Target: scope/non-goals | Ambiguity: 78%\n\nДля первой фазы UI внутри заказа что ты хочешь видеть: одну вкладку/подменю `Детали` с двумя секциями (`Со склада` и `Под заказ`) или две отдельные подвкладки? И что точно НЕ должно войти в первую реализацию?",
+  "options": [
+    {
+      "label": "Одна вкладка, две секции",
+      "value": "single-tab-two-sections",
+      "description": "Проще первая версия внутри заказа"
+    },
+    {
+      "label": "Две подвкладки",
+      "value": "two-subtabs",
+      "description": "Сильнее разделяет разные lifecycle"
+    }
+  ],
+  "allow_other": true,
+  "other_label": "Свой вариант",
+  "multi_select": false,
+  "type": "single-answerable",
+  "source": "deep-interview",
+  "renderer": {
+    "renderer": "tmux-session",
+    "target": "omx-question-question-2026-05-11T23-59-34-635",
+    "launched_at": "2026-05-11T23:59:34.648Z"
+  }
+}

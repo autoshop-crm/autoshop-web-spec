@@ -1,0 +1,21 @@
+# Context Snapshot — CRM Staff Phase 1 Domain Alignment
+
+- Task statement: Выполнить  с учётом Phase 0 baseline.
+- Desired outcome: Обновить frontend typed domain layer под CRM contract, не ломая текущие страницы и подготавливая compile-safe foundation для следующих фаз.
+- Known facts/evidence:
+  - Phase 0 baseline зафиксирован в .
+  - Required model changes зафиксированы в .
+  - Backend contract source of truth: .
+  - First major surface remains .
+- Constraints:
+  - Не внедрять полный role matrix в этой фазе.
+  - Делать backward-safe typed expansion, а не массовый UI rewrite.
+  - Сохранять compile-safe foundation для существующих страниц.
+- Unknowns/open questions:
+  - Какие из новых моделей сразу используются текущими экранами, а какие пока только foundation.
+  - Где текущие страницы завязаны на legacy-simple statuses наиболее жёстко.
+- Likely codebase touchpoints:
+  - 
+  - 
+  - 
+  - 

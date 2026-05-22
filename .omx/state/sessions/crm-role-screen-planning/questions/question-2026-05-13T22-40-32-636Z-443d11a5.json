@@ -1,0 +1,42 @@
+{
+  "kind": "omx.question/v1",
+  "question_id": "question-2026-05-13T22-40-32-636Z-443d11a5",
+  "session_id": "crm-role-screen-planning",
+  "created_at": "2026-05-13T22:40:32.636Z",
+  "updated_at": "2026-05-13T22:40:32.668Z",
+  "status": "prompting",
+  "header": "Round 1 | Intent",
+  "question": "Round 1 | Target: intent | Ambiguity: 100%\n\nЕсли убрать детали экранов, какую главную рабочую проблему должен решить новый staff CRM в первую очередь: ускорение приёмки, прозрачность ремонта, управляемость очереди, контроль согласований/запчастей или что-то ещё? Опиши один самый важный результат для бизнеса/сотрудников.",
+  "options": [
+    {
+      "label": "Ускорение приёмки",
+      "value": "intake_speed",
+      "description": "Сократить время оформления и check-in"
+    },
+    {
+      "label": "Прозрачность ремонта",
+      "value": "repair_visibility",
+      "description": "Дать статус и контекст по заказу всем участникам"
+    },
+    {
+      "label": "Управляемость очереди",
+      "value": "queue_control",
+      "description": "Лучше управлять загрузкой и статусами"
+    },
+    {
+      "label": "Контроль согласований",
+      "value": "approvals_parts",
+      "description": "Снизить потери на approvals и parts"
+    }
+  ],
+  "allow_other": true,
+  "other_label": "Своя формулировка",
+  "multi_select": false,
+  "type": "single-answerable",
+  "source": "deep-interview",
+  "renderer": {
+    "renderer": "tmux-session",
+    "target": "omx-question-question-2026-05-13T22-40-32-636",
+    "launched_at": "2026-05-13T22:40:32.650Z"
+  }
+}

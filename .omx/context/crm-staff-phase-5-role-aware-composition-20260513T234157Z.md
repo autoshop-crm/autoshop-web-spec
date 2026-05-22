@@ -1,0 +1,21 @@
+# Context Snapshot — CRM Staff Phase 5 Role-aware order detail composition
+
+- Task statement: Выполнить `Phase 5 — Role-aware order detail composition` поверх foundation refactor из Phase 4.
+- Desired outcome: Превратить `OrderDetailsPage` в role-aware staff surface с human-readable top context, разным составом блоков по ролям и более понятной visual hierarchy.
+- Known facts/evidence:
+  - Phase 3 contract lives in `ContextProject/Now/CRM_STAFF_ROLE_MATRIX_CONTRACT_RU.md` and `src/domain/crm/orderDetailPolicy.ts`.
+  - Phase 4 split the page into container and presentational view shell.
+  - Current page still shows raw ids in summary and only coarse action grouping.
+- Constraints:
+  - Preserve working parts/files/loyalty/status/estimate flows.
+  - Do not overreach into full admin settings or create-flow redesign.
+  - Respect provisional/open role decisions by choosing safe defaults from Phase 3.
+- Unknowns/open questions:
+  - Customer/vehicle human-readable data is not yet fully loaded from APIs, so some context may need graceful fallback.
+  - Timeline/approvals remain placeholders until dedicated data binding lands.
+- Likely codebase touchpoints:
+  - `src/pages/orders/OrderDetailsPage.tsx`
+  - `src/pages/orders/components/OrderDetailsView.tsx`
+  - `src/domain/crm/orderDetailPolicy.ts`
+  - `src/api/customersApi.ts`
+  - `src/api/vehiclesApi.ts`

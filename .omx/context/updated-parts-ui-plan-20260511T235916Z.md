@@ -1,0 +1,27 @@
+# Context Snapshot
+
+- Task statement: Create an implementation plan for updated Parts UI using deep-interview.
+- Desired outcome: Execution-ready spec and UI plan for updated Parts flow inside order page, focused on mechanic role.
+- Stated solution: Build plan around updated parts/procurement frontend API.
+- Probable intent hypothesis: Replace technical Part ID workflow with mechanic-friendly search/add/procurement flow and define boundaries clearly before implementation.
+- Known facts/evidence:
+  - Order page currently has technical parts UI and order operations mixed in.
+  - Updated parts docs exist in ContextProject/FrontSpec/PARTS_FRONTEND_API_REPORT copy.md.
+  - Additional procurement doc exists in ContextProject/FrontSpec/ORDER_PARTS_PROCUREMENT_FRONTEND_API copy.md.
+- Constraints:
+  - Need plan, not implementation.
+  - Focus on mechanic UI inside order.
+- Unknowns/open questions:
+  - Exact UI scope: single block vs tabs/submenu.
+  - Procurement visibility and actions for mechanic.
+  - What remains manager-only vs mechanic-visible.
+- Decision-boundary unknowns:
+  - Whether OMX may define interaction details without confirmation.
+  - Whether procurement is part of first phase.
+- Likely codebase touchpoints:
+  - src/pages/orders/OrderDetailsPage.tsx
+  - src/api/ordersApi.ts
+  - src/api/partsApi.ts
+  - src/types/models.ts
+  - ContextProject/FrontSpec/PARTS_FRONTEND_API_REPORT copy.md
+  - ContextProject/FrontSpec/ORDER_PARTS_PROCUREMENT_FRONTEND_API copy.md

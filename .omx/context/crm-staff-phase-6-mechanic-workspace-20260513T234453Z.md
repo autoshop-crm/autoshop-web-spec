@@ -1,0 +1,21 @@
+# Context Snapshot — CRM Staff Phase 6 Mechanic workspace
+
+- Task statement: Выполнить `Phase 6 — Mechanic workspace inside order detail` поверх role-aware composition из Phase 5.
+- Desired outcome: Дать механику основной рабочий блок внутри `OrderDetailsPage`: текущие работы, инициирование допработ, связь с approval flow и близость к parts workspace.
+- Known facts/evidence:
+  - Phase 5 already made order detail role-aware and loaded customer/vehicle context.
+  - Phase 2 introduced `orderApprovalApi` and `serviceCatalogApi`.
+  - Backend contract already supports approval request creation for extra work / parts.
+- Constraints:
+  - Preserve current parts/files/loyalty/status/estimate flows.
+  - Avoid inventing a full ERP line-item editor beyond current contract.
+  - Keep manager/admin behavior compatible while prioritizing mechanic usability.
+- Unknowns/open questions:
+  - No dedicated backend endpoint for persisting draft extra work lines beyond approval request creation.
+  - Some mechanic workspace state may remain UI-level until later phases.
+- Likely codebase touchpoints:
+  - `src/pages/orders/OrderDetailsPage.tsx`
+  - `src/pages/orders/components/OrderDetailsView.tsx`
+  - `src/api/orderApprovalApi.ts`
+  - `src/api/serviceCatalogApi.ts`
+  - `src/types/models.ts`
