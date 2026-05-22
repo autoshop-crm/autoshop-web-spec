@@ -7,6 +7,10 @@ on:
       - staging
   workflow_dispatch:
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   call-shared-workflow:
     uses: autoshop-crm/shared-workflows/.github/workflows/shared-build.yml@main
