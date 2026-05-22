@@ -1,32 +1,44 @@
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
-import { Button, Paper, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography } from '@mui/material';
+import { Alert, Button, Paper, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from '@mui/material';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { vehiclesApi } from '../../api/vehiclesApi';
 import { AppAlert } from '../../components/AppAlert';
+import { AccessDeniedState } from '../../components/AccessDeniedState';
+import { CustomerLookupField } from '../../components/CustomerLookupField';
 import { EmptyState, EmptyStateResetButton } from '../../components/EmptyState';
 import { LoadingTable } from '../../components/LoadingTable';
 import { SectionCard } from '../../components/SectionCard';
-import { Vehicle } from '../../types/models';
-import { formatDateTime } from '../../utils/format';
+import { AuthUser, Customer, Vehicle } from '../../types/models';
+import { formatDateTime, fullName } from '../../utils/format';
+import { hasAnyRole } from '../../utils/roles';
+import { getApiErrorMessage } from '../../utils/apiErrors';
 
-export const VehiclesPage = () => {
-  const [customerId, setCustomerId] = useState('');
+export const VehiclesPage = ({ currentUser }: { currentUser: AuthUser | null }) => {
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searched, setSearched] = useState(false);
 
   const loadVehicles = async () => {
+    if (!selectedCustomer) {
+      return;
+    }
+
     setLoading(true);
     setError(null);
     setSearched(true);
     try {
-      const data = await vehiclesApi.getByCustomerId(customerId);
+      const data = await vehiclesApi.getByCustomerId(selectedCustomer.id);
       setVehicles(data);
     } catch (requestError: any) {
-      setError(requestError?.response?.data?.message ?? 'Не удалось загрузить автомобили. Укажите customerId.');
+      setError(getApiErrorMessage(requestError, 'Не удалось загрузить автомобили выбранного клиента.', {
+        badRequest: 'Не удалось выполнить поиск автомобилей по выбранному клиенту.',
+        notFound: 'Автомобили для выбранного клиента не найдены.',
+        conflict: 'Карточка клиента или список автомобилей сейчас обновляются. Повтори запрос.'
+      }));
       setVehicles([]);
     } finally {
       setLoading(false);
@@ -34,11 +46,15 @@ export const VehiclesPage = () => {
   };
 
   const reset = () => {
-    setCustomerId('');
+    setSelectedCustomer(null);
     setVehicles([]);
     setError(null);
     setSearched(false);
   };
+
+  if (!hasAnyRole(currentUser?.roles, ['ADMIN', 'MANAGER', 'RECEPTIONIST', 'MECHANIC'])) {
+    return <AccessDeniedState description="Раздел автомобилей доступен только staff-ролям CRM." />;
+  }
 
   return (
     <Stack spacing={3}>
@@ -50,20 +66,28 @@ export const VehiclesPage = () => {
       </Stack>
 
       <SectionCard title="Поиск автомобилей">
-        <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} mb={3}>
-          <TextField
-            fullWidth
-            label="Customer ID"
-            value={customerId}
-            onChange={(event) => setCustomerId(event.target.value)}
-          />
-          <Button variant="contained" startIcon={<SearchRoundedIcon />} onClick={() => void loadVehicles()} disabled={!customerId}>
+        <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} mb={3} alignItems={{ xs: 'stretch', md: 'flex-start' }}>
+          <Stack flex={1}>
+            <CustomerLookupField
+              value={selectedCustomer}
+              onChange={setSelectedCustomer}
+              helperText="Выберите клиента для просмотра его автомобилей"
+              createCustomerPath="/customers?create=1"
+            />
+          </Stack>
+          <Button variant="contained" startIcon={<SearchRoundedIcon />} onClick={() => void loadVehicles()} disabled={!selectedCustomer}>
             Найти
           </Button>
           <Button variant="text" onClick={reset}>
             Сбросить
           </Button>
         </Stack>
+
+        {selectedCustomer && (
+          <Alert severity="info" sx={{ mb: 3 }}>
+            Выбран клиент: {fullName(selectedCustomer.firstName, selectedCustomer.lastName)} · {selectedCustomer.email} · {selectedCustomer.phoneNumber}
+          </Alert>
+        )}
 
         {error && <AppAlert message={error} onRetry={() => void loadVehicles()} />}
         {loading && <LoadingTable />}
@@ -91,7 +115,7 @@ export const VehiclesPage = () => {
                 {vehicles.map((vehicle) => (
                   <TableRow key={vehicle.id} hover>
                     <TableCell>{vehicle.id}</TableCell>
-                    <TableCell>{vehicle.customerId}</TableCell>
+                    <TableCell>{fullName(selectedCustomer?.firstName, selectedCustomer?.lastName)}</TableCell>
                     <TableCell>{`${vehicle.brand} ${vehicle.model}`}</TableCell>
                     <TableCell>{vehicle.vin}</TableCell>
                     <TableCell>{formatDateTime(vehicle.updatedAt)}</TableCell>

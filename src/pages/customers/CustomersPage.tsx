@@ -1,12 +1,31 @@
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle, Paper, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography } from '@mui/material';
-import { useEffect, useState } from 'react';
+import {
+  Alert,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  MenuItem,
+  Paper,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TablePagination,
+  TableRow,
+  TextField,
+  Typography
+} from '@mui/material';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { z } from 'zod';
-import { customersApi } from '../../api/customersApi';
+import { CustomerCreatePayload, customersApi } from '../../api/customersApi';
 import { AppAlert } from '../../components/AppAlert';
 import { EmptyState, EmptyStateResetButton } from '../../components/EmptyState';
 import { LoadingTable } from '../../components/LoadingTable';
@@ -23,14 +42,22 @@ const createSchema = z.object({
 });
 
 type CustomerFormValues = z.infer<typeof createSchema>;
+type SortDirection = 'asc' | 'desc';
+
+const pageSizeOptions = [10, 20, 50];
 
 export const CustomersPage = ({ currentUser }: { currentUser: AuthUser | null }) => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [query, setQuery] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [createOpen, setCreateOpen] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const [searched, setSearched] = useState(false);
 
   const canCreate = hasAnyRole(currentUser?.roles, ['ADMIN', 'MANAGER', 'RECEPTIONIST']);
 
@@ -49,18 +76,10 @@ export const CustomersPage = ({ currentUser }: { currentUser: AuthUser | null })
     setError(null);
     try {
       const normalized = searchValue.trim();
-      const data = await customersApi.search(
-        normalized.includes('@')
-          ? { email: normalized }
-          : normalized.startsWith('+') || /^\d+$/.test(normalized)
-            ? { phoneNumber: normalized }
-            : normalized.includes(' ')
-              ? { firstName: normalized.split(' ')[0], lastName: normalized.split(' ')[1] }
-              : normalized
-                ? { firstName: normalized }
-                : {}
-      );
+      const data = normalized ? await customersApi.searchByQuery(normalized) : await customersApi.search({});
       setCustomers(data);
+      setSearched(Boolean(normalized));
+      setPage(0);
     } catch (requestError: any) {
       setError(requestError?.response?.data?.message ?? 'Не удалось загрузить список клиентов.');
     } finally {
@@ -72,6 +91,17 @@ export const CustomersPage = ({ currentUser }: { currentUser: AuthUser | null })
     void loadCustomers('');
   }, []);
 
+  useEffect(() => {
+    if (searchParams.get('create') === '1' && canCreate) {
+      setCreateOpen(true);
+      setSearchParams((params) => {
+        const next = new URLSearchParams(params);
+        next.delete('create');
+        return next;
+      }, { replace: true });
+    }
+  }, [canCreate, searchParams, setSearchParams]);
+
   const resetFilters = () => {
     setQuery('');
     void loadCustomers('');
@@ -80,7 +110,7 @@ export const CustomersPage = ({ currentUser }: { currentUser: AuthUser | null })
   const onCreate = async (values: CustomerFormValues) => {
     setCreateError(null);
     try {
-      const created = await customersApi.create(values);
+      const created = await customersApi.create(values as CustomerCreatePayload);
       setCreateOpen(false);
       reset();
       void loadCustomers(query);
@@ -88,6 +118,26 @@ export const CustomersPage = ({ currentUser }: { currentUser: AuthUser | null })
     } catch (requestError: any) {
       setCreateError(requestError?.response?.data?.message ?? 'Не удалось создать клиента.');
     }
+  };
+
+  const sortedCustomers = useMemo(() => {
+    const items = [...customers];
+    items.sort((left, right) => sortDirection === 'asc' ? left.id - right.id : right.id - left.id);
+    return items;
+  }, [customers, sortDirection]);
+
+  const pagedCustomers = useMemo(
+    () => sortedCustomers.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage),
+    [page, rowsPerPage, sortedCustomers]
+  );
+
+  const handleChangePage = (_event: unknown, nextPage: number) => {
+    setPage(nextPage);
+  };
+
+  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setRowsPerPage(Number(event.target.value));
+    setPage(0);
   };
 
   return (
@@ -101,18 +151,66 @@ export const CustomersPage = ({ currentUser }: { currentUser: AuthUser | null })
         )}
       </Stack>
       <SectionCard title="Справочник клиентов">
-        <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} mb={3}>
-          <TextField fullWidth label="Поиск: email, телефон, имя" value={query} onChange={(event) => setQuery(event.target.value)} />
-          <Button variant="contained" startIcon={<SearchRoundedIcon />} onClick={() => void loadCustomers()}>
+        <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} mb={3} alignItems={{ xs: 'stretch', md: 'flex-start' }}>
+          <TextField
+            fullWidth
+            label="Поиск: email или телефон"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            helperText="Пример: `ivan@mail.ru` или `89616521391`"
+          />
+          <TextField
+            select
+            label="Сортировка ID"
+            value={sortDirection}
+            onChange={(event) => {
+              setSortDirection(event.target.value as SortDirection);
+              setPage(0);
+            }}
+            sx={{ width: { xs: '100%', md: 180 } }}
+          >
+            <MenuItem value="asc">По возрастанию</MenuItem>
+            <MenuItem value="desc">По убыванию</MenuItem>
+          </TextField>
+          <TextField
+            select
+            label="На странице"
+            value={rowsPerPage}
+            onChange={(event) => {
+              setRowsPerPage(Number(event.target.value));
+              setPage(0);
+            }}
+            sx={{ width: { xs: '100%', md: 150 } }}
+          >
+            {pageSizeOptions.map((size) => (
+              <MenuItem key={size} value={size}>{size}</MenuItem>
+            ))}
+          </TextField>
+          <Button
+            variant="contained"
+            startIcon={<SearchRoundedIcon />}
+            onClick={() => void loadCustomers()}
+            sx={{ minWidth: 132, height: 56, alignSelf: { xs: 'stretch', md: 'flex-start' } }}
+          >
             Найти
           </Button>
-          <Button variant="text" onClick={resetFilters}>Сбросить</Button>
+          <Button
+            variant="text"
+            onClick={resetFilters}
+            sx={{ minWidth: 110, height: 56, alignSelf: { xs: 'stretch', md: 'flex-start' } }}
+          >
+            Сбросить
+          </Button>
         </Stack>
 
         {error && <AppAlert message={error} onRetry={() => void loadCustomers()} />}
         {loading && <LoadingTable />}
         {!loading && !error && customers.length === 0 && (
-          <EmptyState title="Ничего не найдено" description="Попробуйте очистить фильтры или изменить критерии поиска." action={<EmptyStateResetButton onClick={resetFilters} label="Очистить фильтры" />} />
+          <EmptyState
+            title={searched ? 'Ничего не найдено' : 'Список клиентов пуст'}
+            description={searched ? 'Попробуйте очистить фильтры или изменить критерии поиска.' : 'Клиенты пока отсутствуют или ещё не загружены.'}
+            action={<EmptyStateResetButton onClick={resetFilters} label="Очистить фильтры" />}
+          />
         )}
         {!loading && !error && customers.length > 0 && (
           <TableContainer component={Paper} variant="outlined">
@@ -128,7 +226,7 @@ export const CustomersPage = ({ currentUser }: { currentUser: AuthUser | null })
                 </TableRow>
               </TableHead>
               <TableBody>
-                {customers.map((customer) => (
+                {pagedCustomers.map((customer) => (
                   <TableRow key={customer.id} hover>
                     <TableCell>{customer.id}</TableCell>
                     <TableCell>{fullName(customer.firstName, customer.lastName)}</TableCell>
@@ -142,6 +240,16 @@ export const CustomersPage = ({ currentUser }: { currentUser: AuthUser | null })
                 ))}
               </TableBody>
             </Table>
+            <TablePagination
+              component="div"
+              count={sortedCustomers.length}
+              page={page}
+              onPageChange={handleChangePage}
+              rowsPerPage={rowsPerPage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+              rowsPerPageOptions={pageSizeOptions}
+              labelRowsPerPage="На странице"
+            />
           </TableContainer>
         )}
       </SectionCard>
@@ -152,10 +260,10 @@ export const CustomersPage = ({ currentUser }: { currentUser: AuthUser | null })
           <DialogContent>
             <Stack spacing={2} mt={1}>
               {createError && <Alert severity="error">{createError}</Alert>}
-              <TextField label="Имя" error={Boolean(errors.firstName)} helperText={errors.firstName?.message} {...register('firstName')} />
-              <TextField label="Фамилия" error={Boolean(errors.lastName)} helperText={errors.lastName?.message} {...register('lastName')} />
-              <TextField label="Телефон" error={Boolean(errors.phoneNumber)} helperText={errors.phoneNumber?.message} {...register('phoneNumber')} />
-              <TextField label="Email" error={Boolean(errors.email)} helperText={errors.email?.message} {...register('email')} />
+              <TextField label="Имя" error={Boolean(errors.firstName)} helperText={errors.firstName?.message ?? 'Пример: `Иван`'} {...register('firstName')} />
+              <TextField label="Фамилия" error={Boolean(errors.lastName)} helperText={errors.lastName?.message ?? 'Пример: `Иванов`'} {...register('lastName')} />
+              <TextField label="Телефон" error={Boolean(errors.phoneNumber)} helperText={errors.phoneNumber?.message ?? 'Пример: `89616521391` или `+79616521391`'} {...register('phoneNumber')} />
+              <TextField label="Email" error={Boolean(errors.email)} helperText={errors.email?.message ?? 'Пример: `ivan@mail.ru`'} {...register('email')} />
             </Stack>
           </DialogContent>
           <DialogActions>

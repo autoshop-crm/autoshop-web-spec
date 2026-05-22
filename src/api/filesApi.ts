@@ -1,10 +1,12 @@
 import { http } from './http';
 import { FileItem, OwnerFilesResponse } from '../types/models';
 
+const filesBaseUrl = import.meta.env.VITE_FILES_BASE_URL ?? (import.meta.env.DEV ? 'http://localhost:8084/api/files' : '/api/files');
+
 export const filesApi = {
   listByOwner: async (ownerType: string, ownerId: string, category?: string) => {
-    const { data } = await http.get<OwnerFilesResponse>('/api/files', {
-      params: { ownerType, ownerId, category }
+    const { data } = await http.get<OwnerFilesResponse>(filesBaseUrl, {
+      params: { ownerType, ownerId, category, includeDeleted: false, page: 0, size: 50 }
     });
     return data;
   },
@@ -24,12 +26,11 @@ export const filesApi = {
     }
     formData.append('file', payload.file);
 
-    const { data } = await http.post<FileItem>('/api/files', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    });
+    const { data } = await http.post<FileItem>(filesBaseUrl, formData);
     return data;
   },
   delete: async (fileId: string) => {
-    await http.delete(`/api/files/${fileId}`);
-  }
+    await http.delete(`${filesBaseUrl}/${fileId}`);
+  },
+  getDownloadUrl: (fileId: string) => `${filesBaseUrl}/${fileId}/download`
 };

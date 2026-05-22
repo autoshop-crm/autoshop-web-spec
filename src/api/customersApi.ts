@@ -18,6 +18,13 @@ export const customersApi = {
     const { data } = await http.get<Customer[]>('/api/customers/search', { params });
     return data;
   },
+  searchByQuery: async (query: string, signal?: AbortSignal) => {
+    const { data } = await http.get<Customer[]>('/api/customers/search', {
+      params: { query },
+      signal
+    });
+    return data;
+  },
   getById: async (id: string | number) => {
     const { data } = await http.get<Customer>(`/api/customers/${id}`);
     return data;

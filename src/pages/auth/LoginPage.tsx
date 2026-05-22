@@ -7,7 +7,7 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { authApi } from '../../api/authApi';
 import { authStorage } from '../../auth/storage';
-import { AuthUser } from '../../types/models';
+import { AuthUser, LoginPayload } from '../../types/models';
 import { resolveLoginErrorMessage } from '../../utils/httpError';
 
 const schema = z.object({
@@ -44,7 +44,7 @@ export const LoginPage = ({ onLogin, isAuthenticated }: LoginPageProps) => {
   const onSubmit = async (values: LoginFormValues) => {
     setSubmitError(null);
     try {
-      const response = await authApi.login(values);
+      const response = await authApi.login(values as LoginPayload);
       authStorage.setToken(response.accessToken);
       authStorage.setRefreshToken(response.refreshToken);
       const user = await authApi.me(response.accessToken);
@@ -74,8 +74,8 @@ export const LoginPage = ({ onLogin, isAuthenticated }: LoginPageProps) => {
 
             <form onSubmit={handleSubmit(onSubmit)}>
               <Stack spacing={2}>
-                <TextField label="Email" type="email" error={Boolean(errors.email)} helperText={errors.email?.message} {...register('email')} />
-                <TextField label="Пароль" type="password" error={Boolean(errors.password)} helperText={errors.password?.message} {...register('password')} />
+                <TextField label="Email" type="email" error={Boolean(errors.email)} helperText={errors.email?.message ?? 'Пример: `admin@autoshop.ru`'} {...register('email')} />
+                <TextField label="Пароль" type="password" error={Boolean(errors.password)} helperText={errors.password?.message ?? 'Пример: введите ваш рабочий пароль'} {...register('password')} />
                 <Button type="submit" variant="contained" size="large" disabled={isSubmitting} fullWidth>
                   {isSubmitting ? <CircularProgress size={22} color="inherit" /> : 'Войти'}
                 </Button>

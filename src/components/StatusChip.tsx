@@ -1,12 +1,7 @@
 import { Chip } from '@mui/material';
 import { OrderStatus } from '../types/models';
-
-const statusMap: Record<string, 'info' | 'warning' | 'success' | 'default'> = {
-  NEW: 'info',
-  IN_PROGRESS: 'warning',
-  COMPLETED: 'success'
-};
+import { getOrderStatusLabel, getOrderStatusTone } from '../utils/orderStatus';
 
 export const StatusChip = ({ status }: { status: OrderStatus }) => (
-  <Chip label={status} color={statusMap[status] ?? 'default'} size="small" />
+  <Chip label={getOrderStatusLabel(status)} color={getOrderStatusTone(status)} size="small" />
 );
