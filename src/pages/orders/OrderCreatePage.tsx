@@ -4,6 +4,7 @@ import {
   Alert,
   Box,
   Button,
+  Chip,
   Card,
   CardContent,
   Checkbox,
@@ -20,10 +21,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { z } from 'zod';
+import { BookingDateAvailabilityItem, BookingSlotItem, customerBookingApi } from '../../api/customerBookingApi';
 import { customersApi } from '../../api/customersApi';
 import { ordersApi } from '../../api/ordersApi';
 import { serviceCatalogApi } from '../../api/serviceCatalogApi';
 import { vehiclesApi } from '../../api/vehiclesApi';
+import { BookingAvailabilityCalendar } from '../../components/BookingAvailabilityCalendar';
 import { CustomerLookupField } from '../../components/CustomerLookupField';
 import { EmployeeAvailabilityLookupField } from '../../components/EmployeeAvailabilityLookupField';
 import { Customer, EmployeeAvailabilitySearchItem, ServiceCatalogItemDTO, Vehicle } from '../../types/models';
@@ -44,28 +47,19 @@ const schema = z.object({
 
 type OrderFormValues = z.input<typeof schema>;
 
-const OPEN_HOUR = 10;
-const CLOSE_HOUR = 21;
-const SLOT_STEP_MINUTES = 30;
-
 const fullName = (customer: Customer) => `${customer.lastName} ${customer.firstName}`.trim();
 
-const buildTimeOptions = () => {
-  const items: string[] = [];
-  for (let hour = OPEN_HOUR; hour <= CLOSE_HOUR; hour += 1) {
-    for (const minute of [0, 30]) {
-      if (hour === CLOSE_HOUR && minute > 0) continue;
-      items.push(`${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`);
-    }
-  }
-  return items;
+const todayLocalDate = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 };
 
-const timeOptions = buildTimeOptions();
-
-const buildPlannedVisitAt = (date: string, time: string) => {
-  if (!date || !time) return '';
-  return new Date(`${date}T${time}:00`).toISOString();
+const formatSlotLabel = (slot: BookingSlotItem) => {
+  const formatter = new Intl.DateTimeFormat('ru-RU', { hour: '2-digit', minute: '2-digit' });
+  return `${formatter.format(new Date(slot.startAt))}–${formatter.format(new Date(slot.endAt))}`;
 };
 
 export const OrderCreatePage = () => {
@@ -78,8 +72,14 @@ export const OrderCreatePage = () => {
   const [serviceCatalogItems, setServiceCatalogItems] = useState<ServiceCatalogItemDTO[]>([]);
   const [selectedEmployee, setSelectedEmployee] = useState<EmployeeAvailabilitySearchItem | null>(null);
   const [serviceCatalogError, setServiceCatalogError] = useState<string | null>(null);
+  const [availabilityError, setAvailabilityError] = useState<string | null>(null);
+  const [availabilityLoading, setAvailabilityLoading] = useState(false);
+  const [slotsError, setSlotsError] = useState<string | null>(null);
+  const [slotsLoading, setSlotsLoading] = useState(false);
+  const [availableDates, setAvailableDates] = useState<BookingDateAvailabilityItem[]>([]);
+  const [daySlots, setDaySlots] = useState<BookingSlotItem[]>([]);
   const [plannedDate, setPlannedDate] = useState('');
-  const [plannedTime, setPlannedTime] = useState('10:00');
+  const [selectedSlotStartAt, setSelectedSlotStartAt] = useState('');
   const {
     register,
     handleSubmit,
@@ -105,6 +105,7 @@ export const OrderCreatePage = () => {
 
   const customerIdRegistration = register('customerId');
   const customerId = watch('customerId');
+  const vehicleId = watch('vehicleId');
   const selectedServiceIds = watch('selectedServiceIds') ?? [];
   const immediateDropOff = watch('immediateDropOff');
   const plannedSlotMinutes = watch('plannedSlotMinutes');
@@ -149,15 +150,107 @@ export const OrderCreatePage = () => {
   }, [customerId, setValue]);
 
   useEffect(() => {
-    const nextPlannedVisitAt = buildPlannedVisitAt(plannedDate, plannedTime);
-    setValue('plannedVisitAt', nextPlannedVisitAt, { shouldDirty: true, shouldValidate: true });
+    setValue('plannedVisitAt', selectedSlotStartAt, { shouldDirty: true, shouldValidate: true });
     setSelectedEmployee(null);
     setValue('employeeId', '');
-  }, [plannedDate, plannedTime, setValue]);
+  }, [selectedSlotStartAt, setValue]);
+
+  useEffect(() => {
+    const canLoadAvailability = Number(vehicleId) > 0 && selectedServiceIds.length > 0;
+    if (!canLoadAvailability) {
+      setAvailableDates([]);
+      setDaySlots([]);
+      setPlannedDate('');
+      setSelectedSlotStartAt('');
+      setAvailabilityError(null);
+      setSlotsError(null);
+      return;
+    }
+
+    let active = true;
+    setAvailabilityLoading(true);
+    customerBookingApi.getAvailability({
+      vehicleId: Number(vehicleId),
+      serviceIds: selectedServiceIds,
+      from: todayLocalDate(),
+      days: 30
+    }).then((data) => {
+      if (!active) return;
+      setAvailableDates(data);
+      setAvailabilityError(null);
+
+      const stillValid = plannedDate && data.some((item) => item.date === plannedDate && item.available);
+      if (stillValid) return;
+
+      const firstAvailableDate = data.find((item) => item.available)?.date ?? '';
+      setPlannedDate(firstAvailableDate);
+      setSelectedSlotStartAt('');
+    }).catch((error: any) => {
+      if (!active) return;
+      setAvailableDates([]);
+      setDaySlots([]);
+      setPlannedDate('');
+      setSelectedSlotStartAt('');
+      setAvailabilityError(error?.response?.data?.message ?? 'Не удалось загрузить доступность дат.');
+    }).finally(() => {
+      if (active) {
+        setAvailabilityLoading(false);
+      }
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [plannedDate, selectedServiceIds, setValue, vehicleId]);
+
+  useEffect(() => {
+    const canLoadSlots = Number(vehicleId) > 0 && selectedServiceIds.length > 0 && Boolean(plannedDate);
+    if (!canLoadSlots) {
+      setDaySlots([]);
+      setSelectedSlotStartAt('');
+      setSlotsError(null);
+      return;
+    }
+
+    let active = true;
+    setSlotsLoading(true);
+    customerBookingApi.getSlots({
+      vehicleId: Number(vehicleId),
+      serviceIds: selectedServiceIds,
+      date: plannedDate
+    }).then((data) => {
+      if (!active) return;
+      setDaySlots(data);
+      setSlotsError(null);
+
+      const stillSelected = selectedSlotStartAt && data.some((slot) => slot.startAt === selectedSlotStartAt && slot.available);
+      if (stillSelected) return;
+
+      setSelectedSlotStartAt(data.find((slot) => slot.available)?.startAt ?? '');
+    }).catch((error: any) => {
+      if (!active) return;
+      setDaySlots([]);
+      setSelectedSlotStartAt('');
+      setSlotsError(error?.response?.data?.message ?? 'Не удалось загрузить слоты на выбранную дату.');
+    }).finally(() => {
+      if (active) {
+        setSlotsLoading(false);
+      }
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [plannedDate, selectedServiceIds, selectedSlotStartAt, vehicleId]);
 
   const selectedServices = useMemo(
     () => serviceCatalogItems.filter((item) => selectedServiceIds.includes(item.id)),
     [serviceCatalogItems, selectedServiceIds]
+  );
+
+  const selectedSlot = useMemo(
+    () => daySlots.find((slot) => slot.startAt === selectedSlotStartAt) ?? null,
+    [daySlots, selectedSlotStartAt]
   );
 
   const onSelectCustomer = (customer: Customer | null) => {
@@ -244,26 +337,46 @@ export const OrderCreatePage = () => {
                 <Stack spacing={2.5}>
                   <Typography variant="h6">Дата и слот записи</Typography>
                   <TextField label="Что беспокоит клиента" multiline minRows={3} error={Boolean(errors.problem)} helperText={errors.problem?.message ?? 'Кратко опиши проблему или запрос клиента'} {...register('problem')} />
-                  <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-                    <TextField
-                      fullWidth
-                      type="date"
-                      label="Дата приезда"
-                      value={plannedDate}
-                      onChange={(event) => setPlannedDate(event.target.value)}
-                      InputLabelProps={{ shrink: true }}
-                      helperText="Выбери день записи"
-                    />
-                    <TextField
-                      select
-                      fullWidth
-                      label="Время приезда"
-                      value={plannedTime}
-                      onChange={(event) => setPlannedTime(event.target.value)}
-                      helperText="Слоты по 30 минут с 10:00 до 21:00"
-                    >
-                      {timeOptions.map((item) => <MenuItem key={item} value={item}>{item}</MenuItem>)}
-                    </TextField>
+                  <Stack direction={{ xs: 'column', lg: 'row' }} spacing={2} alignItems="flex-start">
+                    <Box sx={{ width: '100%', maxWidth: 440 }}>
+                      <BookingAvailabilityCalendar
+                        availability={availableDates}
+                        value={plannedDate}
+                        onChange={(date) => {
+                          setPlannedDate(date);
+                          setSelectedSlotStartAt('');
+                        }}
+                        loading={availabilityLoading}
+                        error={availabilityError}
+                        disabled={!vehicleId || selectedServiceIds.length === 0}
+                      />
+                    </Box>
+                    <Stack spacing={1.5} sx={{ flex: 1, width: '100%' }}>
+                      <Typography variant="subtitle1">Время приезда</Typography>
+                      {!plannedDate && <Alert severity="info">Выбери доступную дату в календаре, чтобы увидеть слоты.</Alert>}
+                      {slotsLoading && <Alert severity="info">Загружаю слоты на выбранный день…</Alert>}
+                      {slotsError && <Alert severity="warning">{slotsError}</Alert>}
+                      {!slotsLoading && !slotsError && plannedDate && daySlots.length === 0 && (
+                        <Alert severity="info">На выбранный день слоты не найдены.</Alert>
+                      )}
+                      <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+                        {daySlots.map((slot) => (
+                          <Chip
+                            key={slot.startAt}
+                            label={`${formatSlotLabel(slot)} · ${slot.availableEmployeeCount}`}
+                            color={slot.startAt === selectedSlotStartAt ? 'primary' : 'default'}
+                            variant={slot.startAt === selectedSlotStartAt ? 'filled' : 'outlined'}
+                            disabled={!slot.available}
+                            onClick={() => setSelectedSlotStartAt(slot.startAt)}
+                          />
+                        ))}
+                      </Stack>
+                      {selectedSlot && (
+                        <Alert severity="success">
+                          Выбран слот: {formatSlotLabel(selectedSlot)} · доступных сотрудников: {selectedSlot.availableEmployeeCount}
+                        </Alert>
+                      )}
+                    </Stack>
                     <TextField
                       fullWidth
                       type="number"
