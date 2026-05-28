@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 const proxyTarget = 'http://localhost:8088';
+const crmBasePath = '/crm/';
 const apiProxyDiagnostics = () => ({
     name: 'api-proxy-diagnostics',
     configureServer(server) {
@@ -19,7 +20,7 @@ const apiProxyDiagnostics = () => ({
                 clear: false,
                 timestamp: true
             });
-            server.config.logger.info('[dev-proxy] Open UI only via http://localhost:5173/', {
+            server.config.logger.info('[dev-proxy] Open UI only via http://localhost:5173/crm/', {
                 clear: false,
                 timestamp: true
             });
@@ -27,6 +28,7 @@ const apiProxyDiagnostics = () => ({
     }
 });
 export default defineConfig({
+    base: crmBasePath,
     plugins: [react(), apiProxyDiagnostics()],
     server: {
         port: 5173,

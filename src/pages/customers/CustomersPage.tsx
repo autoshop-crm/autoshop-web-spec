@@ -23,7 +23,7 @@ import {
 } from '@mui/material';
 import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { z } from 'zod';
 import { CustomerCreatePayload, customersApi } from '../../api/customersApi';
 import { AppAlert } from '../../components/AppAlert';
@@ -47,6 +47,7 @@ type SortDirection = 'asc' | 'desc';
 const pageSizeOptions = [10, 20, 50];
 
 export const CustomersPage = ({ currentUser }: { currentUser: AuthUser | null }) => {
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
@@ -114,7 +115,7 @@ export const CustomersPage = ({ currentUser }: { currentUser: AuthUser | null })
       setCreateOpen(false);
       reset();
       void loadCustomers(query);
-      window.location.href = `/customers/${created.id}`;
+      navigate(`/customers/${created.id}`);
     } catch (requestError: any) {
       setCreateError(requestError?.response?.data?.message ?? 'Не удалось создать клиента.');
     }

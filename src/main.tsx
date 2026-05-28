@@ -7,6 +7,7 @@ import { createAppTheme, ThemeMode } from './styles/theme';
 import './styles/global.css';
 
 const THEME_MODE_KEY = 'autoshop.themeMode';
+const ROUTER_BASENAME = import.meta.env.BASE_URL.replace(/\/$/, '');
 
 const getInitialThemeMode = (): ThemeMode => {
   const savedMode = localStorage.getItem(THEME_MODE_KEY);
@@ -35,7 +36,7 @@ const Root = () => {
     <React.StrictMode>
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        <BrowserRouter>
+        <BrowserRouter basename={ROUTER_BASENAME}>
           <App themeMode={themeMode} onToggleThemeMode={toggleThemeMode} />
         </BrowserRouter>
       </ThemeProvider>

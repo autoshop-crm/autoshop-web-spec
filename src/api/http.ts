@@ -2,6 +2,9 @@ import axios from 'axios';
 import { authStorage } from '../auth/storage';
 import { authApi } from './authApi';
 
+const appBasePath = import.meta.env.BASE_URL.replace(/\/$/, '');
+const loginPath = `${appBasePath}/login`;
+
 export const http = axios.create({
   baseURL: import.meta.env.VITE_GATEWAY_BASE_URL ?? ''
 });
@@ -10,8 +13,8 @@ let refreshPromise: Promise<string | null> | null = null;
 
 const redirectToLogin = () => {
   authStorage.clear();
-  if (window.location.pathname !== '/login') {
-    window.location.href = '/login';
+  if (window.location.pathname !== loginPath) {
+    window.location.href = loginPath;
   }
 };
 
