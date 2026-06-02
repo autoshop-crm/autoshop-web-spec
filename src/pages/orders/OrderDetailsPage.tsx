@@ -351,6 +351,15 @@ export const OrderDetailsPage = ({ currentUser }: { currentUser: AuthUser | null
     setMechanicDraftError(null);
 
     await wrapAction(async () => {
+      if (mechanicDraft.approvalScenario !== 'LABOR') {
+        await orderRequestedPartsApi.create(order.id, {
+          articleNumber: partArticleNumber,
+          brand: partBrand,
+          name: partName,
+          quantity: partQuantity
+        });
+      }
+
       await orderApprovalApi.create(order.id, {
         title,
         description,
@@ -478,28 +487,31 @@ export const OrderDetailsPage = ({ currentUser }: { currentUser: AuthUser | null
     }
   };
 
-  const submitQuoteOrder = async () => {
+  const submitQuoteApproval = async () => {
     if (!order || !selectedRequestedItem) return;
     const quote = quotes[Number(selectedQuoteIndex)];
     if (!quote) return;
     await wrapAction(async () => {
-      await orderRequestedPartsApi.order(order.id, selectedRequestedItem.requestedPartIds[0], {
-        quote: {
-          positionSignature: quote.positionSignature ?? null,
-          articleNumber: quote.articleNumber,
-          brand: quote.brand,
-          name: quote.name,
-          purchasePrice: quote.purchasePrice,
-          deliveryDaysMin: quote.deliveryDaysMin ?? null,
-          deliveryDaysMax: quote.deliveryDaysMax ?? null,
-          minOrderQuantity: quote.minOrderQuantity ?? null,
-          quantityRaw: quote.quantityRaw ?? null
+      await orderApprovalApi.create(order.id, {
+        title: `Согласование детали ${selectedRequestedItem.articleNumber}`,
+        description: [
+          selectedRequestedItem.name,
+          quote.provider ? `Поставщик: ${quote.provider}` : null,
+          quote.deliveryDaysMin != null || quote.deliveryDaysMax != null ? `Срок: ${quote.deliveryDaysMin ?? '—'}-${quote.deliveryDaysMax ?? '—'} дн.` : null,
+          clientComment || null
+        ].filter(Boolean).join('\n'),
+        laborAmount: '0',
+        partsAmount: String(Number(salePrice) * selectedRequestedItem.quantity),
+        requiresApproval: true,
+        customerContactChannel,
+        requestedPart: {
+          articleNumber: quote.articleNumber || selectedRequestedItem.articleNumber,
+          brand: quote.brand ?? selectedRequestedItem.brand,
+          name: quote.name ?? selectedRequestedItem.name,
+          quantity: selectedRequestedItem.quantity
         },
-        salePrice: Number(salePrice),
-        createExternalOrder: true,
-        clientComment: clientComment || undefined
       });
-      await autoTransitionOrderStatus('WAITING_FOR_PART');
+      await autoTransitionOrderStatus('WAITING_FOR_OWNER_APPROVAL');
     });
     setQuotesOpen(false);
   };
@@ -581,7 +593,7 @@ export const OrderDetailsPage = ({ currentUser }: { currentUser: AuthUser | null
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setQuotesOpen(false)}>Закрыть</Button>
-          <Button variant="contained" onClick={() => void submitQuoteOrder()} disabled={quotesLoading || quotes.length === 0 || !salePrice}>Заказать</Button>
+          <Button variant="contained" onClick={() => void submitQuoteApproval()} disabled={quotesLoading || quotes.length === 0 || !salePrice}>На согласование</Button>
         </DialogActions>
       </Dialog>
 
