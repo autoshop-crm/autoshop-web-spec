@@ -82,6 +82,37 @@ interface SearchCandidate {
   canAddAsRequested: boolean;
 }
 
+const resolveOrderFileCategory = (file: File) => {
+  if (file.type.startsWith('image/')) {
+    return 'ORDER_INSPECTION_PHOTO';
+  }
+
+  return 'ORDER_DOCUMENT';
+};
+
+const getPartStatusTone = (status: AggregatedOrderPartsItem['displayStatus']) => {
+  switch (status) {
+    case 'IN_STOCK':
+    case 'INSTALLED':
+      return 'success' as const;
+    case 'IN_TRANSIT':
+    case 'WAITING_APPROVAL':
+    case 'APPROVED_WAITING_ORDER':
+    case 'REQUESTED':
+      return 'warning' as const;
+    case 'REJECTED':
+    case 'EXPIRED':
+    case 'CANCELLED':
+      return 'error' as const;
+    default:
+      return 'default' as const;
+  }
+};
+
+const canSelectSupplierForPart = (item: AggregatedOrderPartsItem) => {
+  return ['REQUESTED', 'OUT_OF_STOCK', 'EXPIRED'].includes(item.displayStatus);
+};
+
 export const OrderDetailsPage = ({ currentUser }: { currentUser: AuthUser | null }) => {
   const navigate = useNavigate();
   const { orderId = '' } = useParams();
@@ -360,21 +391,17 @@ export const OrderDetailsPage = ({ currentUser }: { currentUser: AuthUser | null
         });
       }
 
-      await orderApprovalApi.create(order.id, {
-        title,
-        description,
-        laborAmount: mechanicDraft.approvalScenario === 'PART' ? '0' : laborAmount,
-        partsAmount: mechanicDraft.approvalScenario === 'LABOR' ? '0' : partsAmount,
-        requiresApproval: mechanicDraft.requiresOwnerApproval,
-        customerContactChannel,
-        requestedPart: mechanicDraft.approvalScenario === 'LABOR' ? undefined : {
-          articleNumber: partArticleNumber,
-          brand: partBrand,
-          name: partName,
-          quantity: partQuantity
-        }
-      });
-      await autoTransitionOrderStatus('WAITING_FOR_OWNER_APPROVAL');
+      if (mechanicDraft.approvalScenario === 'LABOR') {
+        await orderApprovalApi.create(order.id, {
+          title,
+          description,
+          laborAmount,
+          partsAmount: '0',
+          requiresApproval: mechanicDraft.requiresOwnerApproval,
+          customerContactChannel
+        });
+        await autoTransitionOrderStatus('WAITING_FOR_OWNER_APPROVAL');
+      }
       setMechanicDraft({
         serviceCatalogItemId: null,
         approvalScenario: 'LABOR',
@@ -492,24 +519,21 @@ export const OrderDetailsPage = ({ currentUser }: { currentUser: AuthUser | null
     const quote = quotes[Number(selectedQuoteIndex)];
     if (!quote) return;
     await wrapAction(async () => {
-      await orderApprovalApi.create(order.id, {
-        title: `Согласование детали ${selectedRequestedItem.articleNumber}`,
-        description: [
-          selectedRequestedItem.name,
-          quote.provider ? `Поставщик: ${quote.provider}` : null,
-          quote.deliveryDaysMin != null || quote.deliveryDaysMax != null ? `Срок: ${quote.deliveryDaysMin ?? '—'}-${quote.deliveryDaysMax ?? '—'} дн.` : null,
-          clientComment || null
-        ].filter(Boolean).join('\n'),
-        laborAmount: '0',
-        partsAmount: String(Number(salePrice) * selectedRequestedItem.quantity),
-        requiresApproval: true,
-        customerContactChannel,
-        requestedPart: {
-          articleNumber: quote.articleNumber || selectedRequestedItem.articleNumber,
-          brand: quote.brand ?? selectedRequestedItem.brand,
-          name: quote.name ?? selectedRequestedItem.name,
-          quantity: selectedRequestedItem.quantity
+      await orderRequestedPartsApi.selectQuote(order.id, selectedRequestedItem.requestedPartIds[0], {
+        quote: {
+          positionSignature: quote.positionSignature ?? null,
+          articleNumber: quote.articleNumber,
+          brand: quote.brand,
+          name: quote.name,
+          purchasePrice: quote.purchasePrice,
+          deliveryDaysMin: quote.deliveryDaysMin ?? null,
+          deliveryDaysMax: quote.deliveryDaysMax ?? null,
+          minOrderQuantity: quote.minOrderQuantity ?? null,
+          quantityRaw: quote.quantityRaw ?? null
         },
+        salePrice: Number(salePrice),
+        customerContactChannel,
+        clientComment: clientComment || undefined
       });
       await autoTransitionOrderStatus('WAITING_FOR_OWNER_APPROVAL');
     });
@@ -545,7 +569,7 @@ export const OrderDetailsPage = ({ currentUser }: { currentUser: AuthUser | null
     if (!file) return;
     await wrapAction(async () => {
       await filesApi.upload({
-        category: 'ORDER_DOCUMENT',
+        category: resolveOrderFileCategory(file),
         ownerType: 'ORDER',
         ownerId: orderId,
         uploadedBy,
@@ -821,15 +845,15 @@ export const OrderDetailsPage = ({ currentUser }: { currentUser: AuthUser | null
                             <TableCell>{item.name}</TableCell>
                             <TableCell>{item.quantity}</TableCell>
                             <TableCell>
-                              <Chip label={item.displayStatusLabel} color={item.displayStatus === 'IN_STOCK' ? 'success' : item.displayStatus === 'IN_TRANSIT' ? 'warning' : 'default'} size="small" />
+                              <Chip label={item.displayStatusLabel} color={getPartStatusTone(item.displayStatus)} size="small" />
                             </TableCell>
                             {canManageProcurement && <TableCell>{item.unitPrice != null ? formatMoney(String(item.unitPrice)) : '—'}</TableCell>}
                             {canManageProcurement && <TableCell>{item.lineTotal != null ? formatMoney(String(item.lineTotal)) : '—'}</TableCell>}
                             <TableCell align="right">
                               <Stack direction="row" spacing={1} justifyContent="flex-end">
-                                {canManageProcurement && item.itemType !== 'LOCAL' && item.displayStatus === 'OUT_OF_STOCK' && (
+                                {canManageProcurement && item.itemType !== 'LOCAL' && canSelectSupplierForPart(item) && (
                                   <Button size="small" startIcon={<ShoppingCartCheckoutRoundedIcon />} onClick={() => void openQuotesDialog(item)}>
-                                    Поставщики
+                                    Подобрать поставщика
                                   </Button>
                                 )}
                                 {canManageProcurement && item.itemType !== 'LOCAL' && item.displayStatus === 'IN_TRANSIT' && (

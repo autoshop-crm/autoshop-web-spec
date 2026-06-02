@@ -24,20 +24,30 @@ interface RequestedPartRow {
 }
 
 const requestedPartStatusLabel: Record<string, string> = {
-  PENDING_CUSTOMER_APPROVAL: 'Ждёт согласования клиента',
-  OUT_OF_STOCK: 'Нужно заказать',
+  REQUESTED_BY_MECHANIC: 'Запрошена механиком',
+  WAITING_CLIENT_APPROVAL: 'На согласовании',
+  APPROVED_WAITING_ORDER: 'Одобрена, ждёт заказа',
+  PENDING_CUSTOMER_APPROVAL: 'На согласовании',
+  OUT_OF_STOCK: 'Запрошена',
   ORDERED_IN_TRANSIT: 'Заказана, в пути',
   IN_STOCK_RESERVED: 'Получена и зарезервирована',
   INSTALLED: 'Установлена',
+  CLIENT_REJECTED: 'Отклонена клиентом',
+  QUOTE_EXPIRED: 'Предложение устарело',
   CANCELLED: 'Отменена'
 };
 
 const requestedPartStatusTone: Record<string, 'default' | 'warning' | 'success' | 'error'> = {
+  REQUESTED_BY_MECHANIC: 'warning',
+  WAITING_CLIENT_APPROVAL: 'warning',
+  APPROVED_WAITING_ORDER: 'warning',
   PENDING_CUSTOMER_APPROVAL: 'warning',
-  OUT_OF_STOCK: 'default',
+  OUT_OF_STOCK: 'warning',
   ORDERED_IN_TRANSIT: 'warning',
   IN_STOCK_RESERVED: 'success',
   INSTALLED: 'success',
+  CLIENT_REJECTED: 'error',
+  QUOTE_EXPIRED: 'error',
   CANCELLED: 'error'
 };
 

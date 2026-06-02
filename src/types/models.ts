@@ -512,7 +512,18 @@ export interface VehicleScopedPartSearchResponse {
   items: VehicleScopedPartSearchItem[];
 }
 
-export type RequestedPartStatus = 'OUT_OF_STOCK' | 'ORDERED_IN_TRANSIT' | 'IN_STOCK_RESERVED' | string;
+export type RequestedPartStatus =
+  | 'REQUESTED_BY_MECHANIC'
+  | 'WAITING_CLIENT_APPROVAL'
+  | 'APPROVED_WAITING_ORDER'
+  | 'ORDERED_IN_TRANSIT'
+  | 'IN_STOCK_RESERVED'
+  | 'INSTALLED'
+  | 'CLIENT_REJECTED'
+  | 'QUOTE_EXPIRED'
+  | 'CANCELLED'
+  | 'OUT_OF_STOCK'
+  | string;
 
 export interface OrderRequestedPart {
   id: number;

@@ -24,7 +24,7 @@ export const filesApi = {
     if (payload.uploadedBy) {
       formData.append('uploadedBy', payload.uploadedBy);
     }
-    formData.append('file', payload.file);
+    formData.append('file', payload.file, payload.file.name);
 
     const { data } = await http.post<FileItem>(filesBaseUrl, formData);
     return data;

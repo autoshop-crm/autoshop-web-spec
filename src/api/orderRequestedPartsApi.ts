@@ -1,5 +1,5 @@
 import { http } from './http';
-import { OrderPartsOverviewResponse, OrderRequestedPart, OrderRequestedPartQuote, OrderRequestedPartQuotesResponse } from '../types/models';
+import { ApprovalRequestDTO, OrderPartsOverviewResponse, OrderRequestedPart, OrderRequestedPartQuote, OrderRequestedPartQuotesResponse } from '../types/models';
 
 export interface CreateRequestedPartPayload {
   articleNumber: string;
@@ -27,6 +27,18 @@ export interface OrderRequestedPartOrderPayload {
   clientComment?: string;
 }
 
+export interface OrderRequestedPartSelectQuotePayload {
+  quote: OrderRequestedPartOrderPayload['quote'];
+  salePrice: number;
+  customerContactChannel?: string;
+  clientComment?: string;
+}
+
+export interface OrderRequestedPartSelectQuoteResponse {
+  requestedPart: OrderRequestedPart;
+  approvalRequest: ApprovalRequestDTO;
+}
+
 export interface ReceiveRequestedPartPayload {
   targetPartId?: number | null;
   brand?: string | null;
@@ -50,6 +62,10 @@ export const orderRequestedPartsApi = {
   },
   order: async (orderId: number, requestedPartId: number, payload: OrderRequestedPartOrderPayload) => {
     const { data } = await http.post<OrderRequestedPart>(`/api/orders/${orderId}/requested-parts/${requestedPartId}/order`, payload);
+    return data;
+  },
+  selectQuote: async (orderId: number, requestedPartId: number, payload: OrderRequestedPartSelectQuotePayload) => {
+    const { data } = await http.post<OrderRequestedPartSelectQuoteResponse>(`/api/orders/${orderId}/requested-parts/${requestedPartId}/select-quote`, payload);
     return data;
   },
   receive: async (orderId: number, requestedPartId: number, payload: ReceiveRequestedPartPayload) => {
